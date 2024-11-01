@@ -109,7 +109,7 @@ class TickersViewPercent(QChart):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     window = QMainWindow()
-    tickers = ["BTCUSDT"] #, "ETH"]
+    tickers = ["BTCUSDT", "ETH"]
     chart = TickersViewPercent(tickers)
     chart.setTitle("Date Line chart")
     chart.legend().hide()

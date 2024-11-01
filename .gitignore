@@ -1,0 +1,40 @@
+.*
+.*/
+!.gitignore
+release/
+log/
+/dox/
+*.html
+.vscode/
+
+
+# CMake
+cmake-build-*/
+
+### C++ template
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Executables
+*.out
+
+
+### CLion template
+
+# User-specific stuff:
+#.idea/*
+out/*
