@@ -22,8 +22,8 @@ class TickersViewPercent(QChart):
     def __init__(self, tickers, parent=None):
         super().__init__(QChart.ChartTypeCartesian, parent, Qt.WindowFlags())
         # self._timer = QTimer()
-
-        self.__init_values()
+        # self.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        self.__init_values(len(tickers))
         self.__init_axis_x()
         self.__init_axis_y()
 
@@ -38,7 +38,6 @@ class TickersViewPercent(QChart):
             self._signaler[id].ready.connect(self.handleReceive)
             print(f"~~~~~addSeries key={id}")
 
-
         self.addAxis(self._axisX, Qt.AlignBottom)
         self.addAxis(self._axisY, Qt.AlignLeft)
 
@@ -50,20 +49,26 @@ class TickersViewPercent(QChart):
         self._axisY.setRange(self._yMin, self._yMax)
         self._receiver = ClientMDReceiver.ClientMDReceiver(self._signaler)
         self._receiver.connectState.connect(lambda s: print("connect state : ",s))
+        # self.resize(800, 400)
+        # self._width = self.plotArea().width()
+        # self._scroll = self._width / 10 #self._scroll_width
         # self._receiver.startConnect("127.0.0.1",51300)
         self._receiver.startConnect("192.168.0.106",51300)
         self._receiver.waitForConnected()
+        pass
 
-
-    def __init_values(self):
+    def __init_values(self, multiplier : int):
         self._indx : int = 0
-        self._step = 1
-
+        # self._step = 1
+        self._multiplier : int = multiplier
         self._cnt : int = 300 # increase to 300
-        self._scroll_width = self._cnt / 10 #50
+        self._delimeter : int = 10
+        self._limit : int = self._cnt * self._multiplier - (self._cnt/self._delimeter) #  * sz
+        self._diff : int = self._limit / self._delimeter
+        # self._scroll_width = self._cnt / 10 #50
         self._yMax = 0.5
         self._yMin = -0.5
-
+        pass
 
     def __init_axis_x(self):
         self._curr = QDateTime().currentDateTime() #.addSecs(1)
@@ -71,11 +76,15 @@ class TickersViewPercent(QChart):
         self._axisX.setLabelsAngle(70)
         self._axisX.setFormat("mm:ss")
         self._axisX.setTitleText("Date")
-        self._axisX.setTickCount(30)
+        self._axisX.setTickCount(self._cnt / self._delimeter)
+        add_sec = self._curr.addSecs(self._cnt)
         self._axisX.setRange(self._curr , self._curr.addSecs(self._cnt))
+        # self._axisX.setPointLabelsVisible(True)
+        # self._axisX.setLabelsVisible(True)
         self._sec : int = self._curr.toMSecsSinceEpoch()
         # print(f">>>>>  sec = {int(self._sec)}")
 
+        pass
 
     def __init_axis_y(self):
         self._y = 0
@@ -83,33 +92,43 @@ class TickersViewPercent(QChart):
         self._axisY.setLabelFormat("%.3f") #????? to change float format
         self._axisY.setTitleText("Percent")
         self._axisY.setTickCount(11)
+        pass
 
     @Slot()
     def handleReceive(self, symbol, percent, tm):
         if int(self._sec) != 0:
             self._indx = (tm - self._sec)/1000
-            self._indx = self._indx % 10
+            self._indx = (self._indx % self._delimeter) * self._multiplier
+
+            self._limit -= self._indx
+            self._indx = 0
             self._sec = 0
-            print(f"~~~ index = {self._indx}")
+
+            print(f"~~~ _limit = {self._limit}")
         # else:
         self._indx = self._indx + 1
         # print(f"+++++ index = {self._indx}")
 
-        self._series.get(symbol, None).append(tm, percent)
+        ser = self._series.get(symbol, None)
+        ser.append(tm, percent)
+
         # print(f"++++ tm:{tm} symbol:{symbol} percent:{percent}")
+        # print(f"~~~~~~~ 1 SLOT indx:{self._indx}  width: {self.plotArea().width()}, position = {ser.at(ser.count() - 1)}")
+        # print(f"~~~~~~~ 1 SLOT indx:{self._indx} _cnt:{self._cnt}")
+        print(f"~~~~~~~ 1 SLOT indx:{self._indx}")
 
-        # print(f"!!!!!!!!!!!!! 1 SLOT indx:{self._indx} _cnt:{self._cnt}")
-        if self._indx > self._cnt:
-            self.scroll(self.plotArea().width() / self._scroll_width, 0)
+        if self._indx > self._limit: #self._cnt:
+            # scroll = self.plotArea().width() / self._scroll_width
+            # self.scroll(self._scroll, 0)
+            self.scroll(self.plotArea().width() / self._delimeter, 0)
             print(f"~~~~~~~ 2 SLOT indx:{self._indx}  width: {self.plotArea().width()}")
-            self._indx -= 10
-
-
+            self._indx = self._limit - self._diff # self._scroll * 0.1
+        pass
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     window = QMainWindow()
-    tickers = ["BTCUSDT", "ETH"]
+    tickers = ["BTCUSDT", "ETHUSDT"]
     chart = TickersViewPercent(tickers)
     chart.setTitle("Date Line chart")
     chart.legend().hide()

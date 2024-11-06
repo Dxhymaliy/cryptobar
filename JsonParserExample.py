@@ -6,32 +6,47 @@ class JsonParser:
                   , '{"s":"BTCUSDT"}'
                   , '{"s":"BTCUSDT","i":"1s","E":1730467424005,"t":1730467423000,"T":1730467423999,"o":"70277.990000","c":"70279.990000","h":"70280.000000","l":"70277.990000","p":0.002846}{"s":"ETHUSDT","i":"1s","E":1730467424006,"t":1730467423000,"T":1730467423999,"o":"70277.990000","c":"2537.390000"']
       self.res = ['{"s":"BTCUSDT","i":"1s",']
+      self.indx = 0
 
-   def parse(self, j : str):
+   def check_valid_str(self, j : str):
       sz = len(j)
       print(f">>>> sz: {sz} j: {j}")
-      indx = 0
+      self.indx = 0
 
-      if sz > 0 and j[indx] != '{':
-         e = j.find('}', indx)
+      if sz == 0:
+         return 0
+
+      if len(self.res) > 0 and j[self.indx] == '{' and self.res[len(self.res) -1][0] == '{':
+         self.res.clear()
+      elif j[self.indx] != '{':
+         e = j.find('}', self.indx)
          if e > 0 and len(self.res) > 0:
-            str1 = self.res.pop(len(self.res) -1) + j[indx:e + 1:1]
-            indx += e + 1
+            str1 = self.res.pop(len(self.res) -1) + j[self.indx:e + 1:1]
+            json.loads(str1)
+
+            self.indx += e + 1
             print(f"!!!! get new string: {str1}")
-      while sz > indx and indx >= 0:
-         e = j.find('}', indx)
-         print(f".... e = {e}, indx = {indx}")
+
+      return sz
+
+   def parse(self, j : str):
+      sz = self.check_valid_str(j)
+
+      while sz > self.indx and self.indx >= 0:
+         e = j.find('}', self.indx)
+         print(f".... e = {e}, indx = {self.indx}")
          if e > 0:
-            str1 = j[indx:e + 1:1]
+            str1 = j[self.indx:e + 1:1]
             print(f"++++ receive: {str1}")
-         elif indx >= 0:
-            s = j[indx:sz:1]
+            json.loads(str1)
+         elif self.indx >= 0:
+            s = j[self.indx:sz:1]
             print(f"++++ res: {s}")
             self.res.append(s)
             print(f"++++ res: {self.res}")
             return
 
-         indx += e + 1
+         self.indx += e + 1
 
    def get_strings(self):
       for s in self.arr:

@@ -14,5 +14,6 @@ class DatePercentSeries(QSplineSeries):
         self.setPen(line_color)
         # self.append(date_time.toMSecsSinceEpoch(), percent)-------
 
+
     # def signalPercent(self):
     #     self._signaler.signalPercent()

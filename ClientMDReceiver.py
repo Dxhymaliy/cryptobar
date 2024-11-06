@@ -3,6 +3,7 @@ import os
 import sys
 import signal
 import json
+
 # from PyQt6.uic.properties import QtCore
 
 sys.path.append('.')
@@ -11,7 +12,7 @@ sys.path.insert(0, '.')
 from PySide6 import QtCore
 
 import Signaler
-
+# import ResponseParser
 
 def exit_handler(signal, frame):
     print('Exiting!')
@@ -47,6 +48,7 @@ class ClientMDReceiver(QObject):
     def __init__(self, signaler : dict[str: Signaler], parent=None):
         super().__init__(parent)
         self._signaler = signaler
+        # self._response_parser = ResponseParser.ResponseParser()
         # self._socket : QTcpSocket
         self._socket = QTcpSocket()
         self._socket.readyRead.connect(self.readData)
@@ -55,10 +57,11 @@ class ClientMDReceiver(QObject):
         self._socket.connected.connect(lambda : self.connectState.emit(True))
         self._socket.disconnected.connect(lambda : self.connectState.emit(False))
         print("TcpClient()")
+        pass
 
     def __del__(self):
         print("~TcpClient()")
-
+        pass
     # --------------- func ---------------
 
     def startConnect(self, ip:str, port:int):
@@ -96,43 +99,47 @@ class ClientMDReceiver(QObject):
 
     @QtCore.Slot()
     def readData(self):
-        print(" <<<<<<<< SLOT readData")
+        # print(" <<<<<<<< SLOT readData")
         # data = "ready"
         # if self._socket.writeData("ready", len(data)) == len(data):
         #     print(f" _readData SEND >>>>>: size : {len(data)}")
         bac = self._socket.bytesAvailable()
         resp = self._socket.readAll()
-        print(" _readData : {} , size : {}".format(resp, bac))
+        # print(" size : {}, _readData : {}".format(bac, resp))
         indx = str(resp).find("}{")
 
         if indx > 0:
-            self.parce_resp(resp[0:indx - 1:1]) #[indx + 1]
+            self.parse_resp(resp[0:indx - 1:1]) #[indx + 1]
         else:
-            self.parce_resp(resp)
+            self.parse_resp(resp)
+        # self._response_parser.parse(resp)
+        # for s in self._response_parser.arr:
+        #     self.parse_resp(s)
         pass
 
-    def parce_resp(self, resp):
+    def parse_resp(self, resp):
         # print(f"++++ receive: {resp}")
         j = json.loads(resp.data())
+        # j = json.loads(resp.encode())
         percent = j["p"] #percent
         symbol = j["s"] #.get("symbol")
         tm = j["E"] # .get("timestamp")
         i = str(j["i"])
-        #
+
         if i == "1s":
             # print(f"++++ symbol: {symbol}")
             res = self._signaler.get(symbol, None)
-            # print(f"++++ res: {res} - {tm}")
             if res != None:
+                # print(f"++++ symbol: {symbol} tm: {tm} percent: {percent} ")
                 # res.append(tm, percent)
                 res.signalReady(symbol, percent, tm)
-
-
-    def signalReceiveData(self):
-        # self.receiveData.emit(ba)
-        self._socket.readyRead.emit()
-        print(" >>>>>>>>   send receiveData.emit")
         pass
+
+    # def signalReceiveData(self):
+    #     # self.receiveData.emit(ba)
+    #     self._socket.readyRead.emit()
+    #     print(" >>>>>>>>   send receiveData.emit")
+    #     pass
 
 if __name__ == "__main__":
     print(__name__,QThread.currentThread())
